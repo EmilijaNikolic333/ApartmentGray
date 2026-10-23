@@ -11,6 +11,7 @@ export const host = {
   photo: '/images/boban.jpg',
   phone: '+381 69 691384',
   phoneIntl: '+38169691384',
+  email: 'apartmentgraypirot@gmail.com',
   work: { sr: 'novinar', en: 'journalist' },
   languages: { sr: 'srpski, engleski i bugarski', en: 'Serbian, English and Bulgarian' },
   stats: [

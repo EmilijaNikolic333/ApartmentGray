@@ -588,6 +588,13 @@ function Host() {
               {s.whatsapp}
             </a>
           </div>
+          <a className="host-email" href={`mailto:${host.email}?subject=${encodeURIComponent(s.emailSubject)}`}>
+            <span className="icon">✉️</span>
+            <span>
+              <small>{s.email}</small>
+              {host.email}
+            </span>
+          </a>
         </div>
       </div>
     </section>
@@ -668,6 +675,8 @@ function Footer() {
         <div className="footer-address">{t(apartment.address)}</div>
         <div className="footer-phone">
           {s.footerHost} {host.name}: <a href={`tel:${host.phoneIntl}`}>{host.phone}</a>
+          {' · '}
+          <a href={`mailto:${host.email}?subject=${encodeURIComponent(s.emailSubject)}`}>{host.email}</a>
         </div>
         <div className="muted">
           {s.dataFrom}{' '}
