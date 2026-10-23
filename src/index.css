@@ -68,8 +68,7 @@ h3 { margin: 0 0 0.75rem; font-size: 1.05rem; }
   border-bottom: 1px solid #e3e3df;
 }
 .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 64px; }
-.logo { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; text-decoration: none; }
-.logo span { color: #8a9099; }
+.logo { text-decoration: none; }
 .nav { display: flex; gap: 22px; }
 .nav a { text-decoration: none; color: var(--muted); font-weight: 500; font-size: 0.93rem; }
 .nav a:hover { color: var(--text); }
@@ -191,6 +190,20 @@ h3 { margin: 0 0 0.75rem; font-size: 1.05rem; }
 }
 .nav a:hover::after, .nav a.is-active::after { transform: scaleX(1); }
 .nav a.is-active { color: var(--text); }
+
+/* Logo */
+.logo { display: flex; align-items: center; color: var(--text); }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-family: 'Montserrat', 'Inter', sans-serif; }
+.brand-mark { width: 44px; height: auto; flex-shrink: 0; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; text-transform: uppercase; }
+.brand-name { font-size: 0.95rem; font-weight: 600; letter-spacing: 0.2em; }
+.brand-tag { font-size: 0.58rem; font-weight: 500; letter-spacing: 0.16em; color: var(--muted); }
+.brand-stacked { flex-direction: column; gap: 14px; text-align: center; }
+.brand-stacked .brand-mark { width: 92px; }
+.brand-stacked .brand-name { font-size: 1.35rem; letter-spacing: 0.24em; }
+.brand-stacked .brand-tag { font-size: 0.85rem; letter-spacing: 0.12em; color: inherit; margin-top: 6px; }
+.footer .brand-stacked { margin-bottom: 18px; }
+.footer-address { margin-bottom: 4px; }
 
 /* Izbor jezika */
 .topbar-actions { display: flex; align-items: center; gap: 12px; }
@@ -421,5 +434,13 @@ h3 { margin: 0 0 0.75rem; font-size: 1.05rem; }
   .call-fab { right: 16px; bottom: 16px; }
   .topbar-actions { gap: 8px; }
   .topbar-actions .btn { padding: 8px 14px; font-size: 0.88rem; }
-  .logo { font-size: 1.2rem; }
+  .topbar-inner { gap: 10px; }
+  .topbar .brand { gap: 7px; }
+  .topbar .brand-mark { width: 32px; }
+  .topbar .brand-name { font-size: 0.7rem; letter-spacing: 0.1em; }
+  .topbar .brand-tag { display: none; }
+  .lang-switch button { width: 34px; }
+}
+@media (max-width: 370px) {
+  .topbar .brand-text { display: none; }
 }

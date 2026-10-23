@@ -140,6 +140,33 @@ function ScrollProgress() {
   return <div className="scroll-progress" ref={ref} />
 }
 
+// Kućica iz logoa (krov sa dimnjakom); boja prati currentColor
+function HouseMark({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 226 140" aria-hidden="true">
+      <g fill="none" stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 132 L112 44 L220 132" />
+        <path d="M40 132 L112 72 L208 132" />
+        <path d="M36 105 V58 H70 V78" />
+        <path d="M50 42 C40 34 60 26 48 12" strokeWidth="6" />
+        <path d="M66 42 C58 36 72 30 64 20" strokeWidth="5" />
+      </g>
+    </svg>
+  )
+}
+
+function Logo({ stacked = false }) {
+  return (
+    <span className={`brand${stacked ? ' brand-stacked' : ''}`}>
+      <HouseMark className="brand-mark" />
+      <span className="brand-text">
+        <span className="brand-name">Apartment Gray</span>
+        <span className="brand-tag">Hosting since 2010</span>
+      </span>
+    </span>
+  )
+}
+
 function LangSwitch() {
   const { lang, setLang } = useLang()
   return (
@@ -183,8 +210,8 @@ function Header() {
     <header className={`topbar${scrolled ? ' is-scrolled' : ''}`}>
       <ScrollProgress />
       <div className="container topbar-inner">
-        <a href="#" className="logo">
-          Apartment <span>Gray</span>
+        <a href="#" className="logo" aria-label="Apartment Gray">
+          <Logo />
         </a>
         <nav className="nav">
           {sectionIds.map((id) => (
@@ -634,7 +661,8 @@ function Footer() {
   return (
     <footer className="footer">
       <div className="container">
-        <strong>{apartment.name}</strong> · {t(apartment.address)}
+        <Logo stacked />
+        <div className="footer-address">{t(apartment.address)}</div>
         <div className="footer-phone">
           {s.footerHost} {host.name}: <a href={`tel:${host.phoneIntl}`}>{host.phone}</a>
         </div>
