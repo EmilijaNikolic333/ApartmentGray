@@ -9,7 +9,7 @@ export const platforms = [
 export const host = {
   name: 'Boban',
   photo: '/images/boban.jpg',
-  phone: '069 691384',
+  phone: '+381 69 691384',
   phoneIntl: '+38169691384',
   work: { sr: 'novinar', en: 'journalist' },
   languages: { sr: 'srpski, engleski i bugarski', en: 'Serbian, English and Bulgarian' },

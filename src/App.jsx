@@ -584,6 +584,9 @@ function Host() {
             <a className="btn btn-outline" href={`viber://chat?number=%2B${host.phoneIntl.slice(1)}`}>
               {s.viber}
             </a>
+            <a className="btn btn-outline" href={`https://wa.me/${host.phoneIntl.slice(1)}`} target="_blank" rel="noreferrer">
+              {s.whatsapp}
+            </a>
           </div>
         </div>
       </div>
