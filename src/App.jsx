@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   apartment,
   highlights,
@@ -10,25 +10,14 @@ import {
   nearby,
 } from './data'
 import { platforms, host, foreignReviews } from './guests'
+import { languages, strings, LangContext, useLang, initialLang } from './i18n'
 
-const fmt = (n, decimals = 1) => n.toFixed(decimals).replace('.', ',')
-const reviewWord = (n) => {
-  const last = n % 10
-  const lastTwo = n % 100
-  if (lastTwo >= 11 && lastTwo <= 14) return 'recenzija'
-  return last >= 2 && last <= 4 ? 'recenzije' : 'recenzija'
-}
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-const sections = [
-  { id: 'galerija', label: 'Galerija' },
-  { id: 'opis', label: 'Opis' },
-  { id: 'sadrzaji', label: 'Sadržaji' },
-  { id: 'recenzije', label: 'Recenzije' },
-  { id: 'domacin', label: 'Domaćin' },
-  { id: 'pravila', label: 'Kućni red' },
-  { id: 'lokacija', label: 'Lokacija' },
-]
+const sectionIds = ['galerija', 'opis', 'sadrzaji', 'recenzije', 'domacin', 'pravila', 'lokacija']
+
+// Tekst recenzije na izabranom jeziku: original ako je pisana tim jezikom, inače prevod
+const reviewText = (r, lang) => (r.lang.toLowerCase() === lang ? r.original : r[lang])
 
 // Elementi sa klasom .reveal se postepeno pojavljuju pri skrolovanju
 function useReveal() {
@@ -64,6 +53,7 @@ function useReveal() {
 }
 
 function CountUp({ to, decimals = 0, suffix = '' }) {
+  const { fmt } = useLang()
   const ref = useRef(null)
   const [value, setValue] = useState(to)
 
@@ -98,9 +88,10 @@ function CountUp({ to, decimals = 0, suffix = '' }) {
 }
 
 function Stars({ value, max = 5 }) {
+  const { s, fmt } = useLang()
   const pct = (value / max) * 100
   return (
-    <span className="stars-rating" aria-label={`${fmt(value)} od ${max}`}>
+    <span className="stars-rating" aria-label={s.outOf(fmt(value), max)}>
       <span className="stars-empty">★★★★★</span>
       <span className="stars-full" style={{ width: `${pct}%` }}>★★★★★</span>
     </span>
@@ -149,7 +140,27 @@ function ScrollProgress() {
   return <div className="scroll-progress" ref={ref} />
 }
 
+function LangSwitch() {
+  const { lang, setLang } = useLang()
+  return (
+    <div className="lang-switch" role="group" aria-label="Jezik / Language">
+      <span className="lang-thumb" style={{ transform: `translateX(${languages.indexOf(lang) * 100}%)` }} />
+      {languages.map((l) => (
+        <button
+          key={l}
+          className={l === lang ? 'is-active' : ''}
+          aria-pressed={l === lang}
+          onClick={() => setLang(l)}
+        >
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function Header() {
+  const { s } = useLang()
   const [active, setActive] = useState(null)
   const [scrolled, setScrolled] = useState(false)
 
@@ -157,9 +168,9 @@ function Header() {
     const onScroll = () => {
       setScrolled(window.scrollY > 8)
       let current = null
-      for (const s of sections) {
-        const el = document.getElementById(s.id)
-        if (el && el.getBoundingClientRect().top <= window.innerHeight * 0.4) current = s.id
+      for (const id of sectionIds) {
+        const el = document.getElementById(id)
+        if (el && el.getBoundingClientRect().top <= window.innerHeight * 0.4) current = id
       }
       setActive(current)
     }
@@ -176,46 +187,50 @@ function Header() {
           Apartment <span>Gray</span>
         </a>
         <nav className="nav">
-          {sections.map((s) => (
-            <a key={s.id} href={`#${s.id}`} className={active === s.id ? 'is-active' : ''}>
-              {s.label}
+          {sectionIds.map((id) => (
+            <a key={id} href={`#${id}`} className={active === id ? 'is-active' : ''}>
+              {s.nav[id]}
             </a>
           ))}
         </nav>
-        <a className="btn btn-primary" href={apartment.bookingUrl} target="_blank" rel="noreferrer">
-          Rezerviši
-        </a>
+        <div className="topbar-actions">
+          <LangSwitch />
+          <a className="btn btn-primary" href={s.bookingUrl} target="_blank" rel="noreferrer">
+            {s.book}
+          </a>
+        </div>
       </div>
     </header>
   )
 }
 
 function Hero({ onOpen }) {
+  const { s, t, fmt } = useLang()
   return (
     <section className="hero">
-      <img src={photos[0].src} alt={photos[0].alt} onClick={() => onOpen(0)} />
+      <img src={photos[0].src} alt={t(photos[0].alt)} onClick={() => onOpen(0)} />
       <div className="hero-overlay">
         <div className="container">
           <div className="stars rise">{'★'.repeat(apartment.stars)}</div>
           <h1 className="rise" style={{ '--delay': '0.1s' }}>{apartment.name}</h1>
           <p className="tagline rise" style={{ '--delay': '0.2s' }}>
-            <Typed words={['vrt sa ružama', 'mir 5 minuta od centra', 'domaćinski doček', 'mesto za celu porodicu']} />
+            <Typed key={s.typed[0]} words={s.typed} />
           </p>
-          <p className="address rise" style={{ '--delay': '0.3s' }}>📍 {apartment.address}</p>
+          <p className="address rise" style={{ '--delay': '0.3s' }}>📍 {t(apartment.address)}</p>
           <div className="hero-badges rise" style={{ '--delay': '0.4s' }}>
             {platforms.map((p) => (
               <a key={p.name} href="#recenzije" className="hero-badge">
                 <strong>{fmt(p.score)}</strong>
                 <span>
                   {p.name}
-                  <small>{p.max === 5 ? '★★★★★' : `${p.count} recenzija`}</small>
+                  <small>{p.max === 5 ? '★★★★★' : `${p.count} ${s.reviewWord(p.count)}`}</small>
                 </span>
               </a>
             ))}
           </div>
         </div>
       </div>
-      <a href="#galerija" className="scroll-hint" aria-label="Skroluj naniže">
+      <a href="#galerija" className="scroll-hint" aria-label={s.scrollDown}>
         <span />
       </a>
     </section>
@@ -223,11 +238,12 @@ function Hero({ onOpen }) {
 }
 
 function Gallery({ onOpen }) {
+  const { s, t } = useLang()
   const [showAll, setShowAll] = useState(false)
   const visible = showAll ? photos : photos.slice(0, 9)
   return (
     <section id="galerija" className="section container">
-      <h2 className="reveal">Galerija</h2>
+      <h2 className="reveal">{s.gallery}</h2>
       <div className="gallery">
         {visible.map((p, i) => (
           <button
@@ -236,15 +252,15 @@ function Gallery({ onOpen }) {
             style={{ '--delay': `${(i % 3) * 0.08}s` }}
             onClick={() => onOpen(i)}
           >
-            <img src={p.src} alt={p.alt} loading="lazy" />
-            <span className="thumb-label">{p.alt}</span>
+            <img src={p.src} alt={t(p.alt)} loading="lazy" />
+            <span className="thumb-label">{t(p.alt)}</span>
           </button>
         ))}
       </div>
       {!showAll && (
         <div className="center">
           <button className="btn btn-outline" onClick={() => setShowAll(true)}>
-            Prikaži sve fotografije ({photos.length})
+            {s.showAll(photos.length)}
           </button>
         </div>
       )}
@@ -253,6 +269,7 @@ function Gallery({ onOpen }) {
 }
 
 function Lightbox({ index, onClose, onNav }) {
+  const { s, t } = useLang()
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') onClose()
@@ -270,40 +287,41 @@ function Lightbox({ index, onClose, onNav }) {
   const p = photos[index]
   return (
     <div className="lightbox" onClick={onClose}>
-      <button className="lb-close" onClick={onClose} aria-label="Zatvori">✕</button>
-      <button className="lb-nav lb-prev" onClick={(e) => { e.stopPropagation(); onNav(-1) }} aria-label="Prethodna">‹</button>
+      <button className="lb-close" onClick={onClose} aria-label={s.close}>✕</button>
+      <button className="lb-nav lb-prev" onClick={(e) => { e.stopPropagation(); onNav(-1) }} aria-label={s.prev}>‹</button>
       <figure key={p.src} onClick={(e) => e.stopPropagation()}>
-        <img src={p.src} alt={p.alt} />
+        <img src={p.src} alt={t(p.alt)} />
         <figcaption>
-          {p.alt} · {index + 1} / {photos.length}
+          {t(p.alt)} · {index + 1} / {photos.length}
         </figcaption>
       </figure>
-      <button className="lb-nav lb-next" onClick={(e) => { e.stopPropagation(); onNav(1) }} aria-label="Sledeća">›</button>
+      <button className="lb-nav lb-next" onClick={(e) => { e.stopPropagation(); onNav(1) }} aria-label={s.next}>›</button>
     </div>
   )
 }
 
 function About() {
+  const { s, t } = useLang()
   return (
     <section id="opis" className="section container about">
       <div className="reveal">
-        <h2>O apartmanu</h2>
-        {apartment.description.map((t) => (
-          <p key={t}>{t}</p>
+        <h2>{s.about}</h2>
+        {apartment.description.map((d) => (
+          <p key={d.sr}>{t(d)}</p>
         ))}
       </div>
       <aside className="card highlights reveal" style={{ '--delay': '0.15s' }}>
-        <h3>Ukratko</h3>
+        <h3>{s.summary}</h3>
         <ul>
           {highlights.map((h) => (
-            <li key={h.label}>
+            <li key={h.label.sr}>
               <span className="icon">{h.icon}</span>
-              {h.label}
+              {t(h.label)}
             </li>
           ))}
         </ul>
-        <a className="btn btn-primary block" href={apartment.bookingUrl} target="_blank" rel="noreferrer">
-          Proveri raspoloživost
+        <a className="btn btn-primary block" href={s.bookingUrl} target="_blank" rel="noreferrer">
+          {s.checkAvailability}
         </a>
       </aside>
     </section>
@@ -311,15 +329,16 @@ function About() {
 }
 
 function Facilities() {
+  const { s, t } = useLang()
   return (
     <section id="sadrzaji" className="section alt">
       <div className="container">
-        <h2 className="reveal">Sadržaji</h2>
+        <h2 className="reveal">{s.facilities}</h2>
         <div className="facilities">
           {facilities.map((f, i) => (
-            <div key={f.label} className="facility reveal" style={{ '--delay': `${(i % 3) * 0.06}s` }}>
+            <div key={f.label.sr} className="facility reveal" style={{ '--delay': `${(i % 3) * 0.06}s` }}>
               <span className="icon">{f.icon}</span>
-              {f.label}
+              {t(f.label)}
             </div>
           ))}
         </div>
@@ -329,6 +348,7 @@ function Facilities() {
 }
 
 function PlatformScores() {
+  const { s, t } = useLang()
   return (
     <div className="platforms">
       {platforms.map((p, i) => (
@@ -340,7 +360,7 @@ function PlatformScores() {
           </div>
           <Stars value={p.score} max={p.max} />
           <div className="muted">
-            {p.label} · {p.count} {reviewWord(p.count)}
+            {t(p.label)} · {p.count} {s.reviewWord(p.count)}
           </div>
         </div>
       ))}
@@ -349,6 +369,7 @@ function PlatformScores() {
 }
 
 function ForeignReviews() {
+  const { lang, s, t } = useLang()
   const [index, setIndex] = useState(0)
   const [original, setOriginal] = useState(false)
   const [paused, setPaused] = useState(false)
@@ -358,6 +379,8 @@ function ForeignReviews() {
     setOriginal(false)
     setIndex((i) => (i + dir + n) % n)
   }, [n])
+
+  useEffect(() => setOriginal(false), [lang])
 
   useEffect(() => {
     if (paused || original || reducedMotion()) return
@@ -374,14 +397,14 @@ function ForeignReviews() {
   }
 
   const r = foreignReviews[index]
+  const translated = r.lang.toLowerCase() !== lang
+  const showOriginal = translated && original
   return (
     <div className="world reveal">
       <div className="world-head">
         <div>
-          <h3>Gosti iz celog sveta</h3>
-          <p className="muted">
-            Recenzije sa Airbnb-a, prevedene na srpski · {n} recenzija, sve sa ocenom 5 ★
-          </p>
+          <h3>{s.worldTitle}</h3>
+          <p className="muted">{s.worldSub(n)}</p>
         </div>
         <div className="langs" aria-hidden="true">
           {[...new Set(foreignReviews.map((x) => x.lang))].map((l) => (
@@ -400,26 +423,30 @@ function ForeignReviews() {
         <article key={index} className="card quote">
           <span className="quote-mark" aria-hidden="true">“</span>
           <Stars value={5} />
-          <p lang={original ? r.lang.toLowerCase() : 'sr'}>{original ? r.original : r.text}</p>
+          <p lang={showOriginal ? r.lang.toLowerCase() : lang}>
+            {showOriginal ? r.original : reviewText(r, lang)}
+          </p>
           <footer>
             <span className="avatar">{r.name[0]}</span>
             <div>
               <strong>{r.name}</strong>
               <div className="muted">
-                {r.place ? `${r.place} · ` : ''}
-                {r.date}
+                {r.place ? `${t(r.place)} · ` : ''}
+                {t(r.date)}
               </div>
             </div>
-            <button className="translate" onClick={() => setOriginal((o) => !o)}>
-              {original ? 'Prikaži prevod' : `Original (${r.lang})`}
-            </button>
+            {translated && (
+              <button className="translate" onClick={() => setOriginal((o) => !o)}>
+                {original ? s.showTranslation : s.showOriginal(r.lang)}
+              </button>
+            )}
           </footer>
-          {!original && (
-            <div className="muted small">Prevedeno sa {r.from} jezika</div>
+          {translated && !original && (
+            <div className="muted small">{s.translatedFrom(s.langNames[r.lang])}</div>
           )}
         </article>
-        <button className="quote-nav prev" onClick={() => go(-1)} aria-label="Prethodna recenzija">‹</button>
-        <button className="quote-nav next" onClick={() => go(1)} aria-label="Sledeća recenzija">›</button>
+        <button className="quote-nav prev" onClick={() => go(-1)} aria-label={s.prevReview}>‹</button>
+        <button className="quote-nav next" onClick={() => go(1)} aria-label={s.nextReview}>›</button>
       </div>
 
       <div className="dots">
@@ -428,7 +455,7 @@ function ForeignReviews() {
             key={i}
             className={i === index ? 'is-active' : ''}
             onClick={() => { setOriginal(false); setIndex(i) }}
-            aria-label={`Recenzija ${i + 1}: ${x.name}`}
+            aria-label={s.reviewN(i + 1, x.name)}
           >
             {i === index && <span key={index} className="dot-progress" />}
           </button>
@@ -439,24 +466,25 @@ function ForeignReviews() {
 }
 
 function Reviews() {
+  const { lang, s, t, fmt } = useLang()
   return (
     <section id="recenzije" className="section container">
-      <h2 className="reveal">Utisci gostiju</h2>
+      <h2 className="reveal">{s.guestImpressions}</h2>
       <PlatformScores />
 
       <div className="reviews-summary reveal">
         <div className="big-score">
           <span className="score lg">{fmt(apartment.score)}</span>
           <div>
-            <strong>Booking.com · {apartment.scoreLabel}</strong>
-            <div className="muted">{apartment.reviewCount} recenzija</div>
+            <strong>Booking.com · {t(apartment.scoreLabel)}</strong>
+            <div className="muted">{apartment.reviewCount} {s.reviewWord(apartment.reviewCount)}</div>
           </div>
         </div>
         <div className="bars">
           {ratings.map((r) => (
-            <div key={r.label} className="bar-row">
+            <div key={r.label.sr} className="bar-row">
               <div className="bar-head">
-                <span>{r.label}</span>
+                <span>{t(r.label)}</span>
                 <strong>{fmt(r.value)}</strong>
               </div>
               <div className="bar">
@@ -469,7 +497,7 @@ function Reviews() {
 
       <ForeignReviews />
 
-      <h3 className="reviews-title reveal">Gosti iz Srbije</h3>
+      <h3 className="reviews-title reveal">{s.localTitle}</h3>
       <div className="reviews">
         {reviews.map((r, i) => (
           <article key={r.name} className="card review reveal" style={{ '--delay': `${(i % 3) * 0.08}s` }}>
@@ -477,10 +505,11 @@ function Reviews() {
               <span className="avatar">{r.name[0]}</span>
               <div>
                 <strong>{r.name}</strong>
-                <div className="muted">🇷🇸 {r.country}</div>
+                <div className="muted">🇷🇸 {s.serbia}</div>
               </div>
             </div>
-            <p>„{r.text}”</p>
+            <p lang={lang}>„{r[lang]}”</p>
+            {lang !== 'sr' && <div className="muted small">{s.translatedFrom(s.langNames.SR)}</div>}
           </article>
         ))}
       </div>
@@ -489,47 +518,44 @@ function Reviews() {
 }
 
 function Host() {
+  const { s, t } = useLang()
   return (
     <section id="domacin" className="section alt">
       <div className="container host">
         <div className="card host-card reveal">
           <div className="host-photo">
-            <img src={host.photo} alt={`Domaćin ${host.name}`} />
+            <img src={host.photo} alt={s.hostPhotoAlt(host.name)} />
             <span className="host-badge" title="Superhost">★</span>
           </div>
           <h3>{host.name}</h3>
-          <div className="muted">Superhost · Domaćin</div>
+          <div className="muted">{s.superhost}</div>
           <div className="host-stats">
-            {host.stats.map((s) => (
-              <div key={s.label}>
+            {host.stats.map((st) => (
+              <div key={st.label.sr}>
                 <strong>
-                  <CountUp to={s.value} decimals={s.decimals} suffix={s.suffix} />
+                  <CountUp to={st.value} decimals={st.decimals} suffix={st.suffix} />
                 </strong>
-                <span>{s.label}</span>
+                <span>{t(st.label)}</span>
               </div>
             ))}
           </div>
         </div>
 
         <div className="host-info reveal" style={{ '--delay': '0.15s' }}>
-          <h2>Upoznajte domaćina</h2>
-          <p>
-            {host.name} je Superhost na Airbnb-u – status koji dobijaju iskusni domaćini sa
-            izvanrednim ocenama i pouzdanim gostoprimstvom. Gosti ga u recenzijama najčešće opisuju
-            kao ljubaznog, predusretljivog i uvek dostupnog.
-          </p>
+          <h2>{s.meetHost}</h2>
+          <p>{s.hostBio(host.name)}</p>
           <ul className="host-facts">
-            <li><span className="icon">💼</span>Zanimanje: {host.work.toLowerCase()}</li>
-            <li><span className="icon">🗣️</span>Govori {host.languages}</li>
-            <li><span className="icon">⚡</span>Odgovara u roku od sat vremena</li>
+            <li><span className="icon">💼</span>{s.work(t(host.work))}</li>
+            <li><span className="icon">🗣️</span>{s.speaks(t(host.languages))}</li>
+            <li><span className="icon">⚡</span>{s.responds}</li>
           </ul>
           <div className="host-actions">
             <a className="btn btn-primary btn-call" href={`tel:${host.phoneIntl}`}>
               <span className="ring" aria-hidden="true">📞</span>
-              Pozovi {host.name}a · {host.phone}
+              {s.callHost(host.name)} · {host.phone}
             </a>
             <a className="btn btn-outline" href={`viber://chat?number=%2B${host.phoneIntl.slice(1)}`}>
-              Viber poruka
+              {s.viber}
             </a>
           </div>
         </div>
@@ -539,17 +565,18 @@ function Host() {
 }
 
 function HouseRules() {
+  const { s, t } = useLang()
   return (
     <section id="pravila" className="section">
       <div className="container">
-        <h2 className="reveal">Kućni red</h2>
+        <h2 className="reveal">{s.rules}</h2>
         <div className="rules">
           {houseRules.map((r, i) => (
-            <div key={r.title} className="rule reveal" style={{ '--delay': `${(i % 2) * 0.08}s` }}>
+            <div key={r.title.sr} className="rule reveal" style={{ '--delay': `${(i % 2) * 0.08}s` }}>
               <span className="icon">{r.icon}</span>
               <div>
-                <strong>{r.title}</strong>
-                <p>{r.text}</p>
+                <strong>{t(r.title)}</strong>
+                <p>{t(r.text)}</p>
               </div>
             </div>
           ))}
@@ -560,27 +587,28 @@ function HouseRules() {
 }
 
 function Location() {
+  const { s, t, fmt } = useLang()
   const { lat, lng } = apartment.coords
   const d = 0.008
   const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d}%2C${lat - d / 2}%2C${lng + d}%2C${lat + d / 2}&layer=mapnik&marker=${lat}%2C${lng}`
   return (
     <section id="lokacija" className="section alt">
       <div className="container">
-        <h2 className="reveal">Lokacija</h2>
+        <h2 className="reveal">{s.location}</h2>
         <p className="muted reveal">
-          📍 {apartment.address} · Odlična lokacija – ocena {fmt(apartment.locationScore)}/10, oko 5 minuta hoda do centra
+          📍 {t(apartment.address)} · {s.locationNote(fmt(apartment.locationScore))}
         </p>
         <div className="location reveal">
-          <iframe title="Mapa" src={mapSrc} loading="lazy" />
+          <iframe title={s.map} src={mapSrc} loading="lazy" />
           <div className="card">
             {nearby.map((g) => (
-              <div key={g.group} className="nearby-group">
-                <h3>{g.group}</h3>
+              <div key={g.group.sr} className="nearby-group">
+                <h3>{t(g.group)}</h3>
                 <ul>
                   {g.items.map((i) => (
-                    <li key={i.name}>
-                      <span>{i.name}</span>
-                      <span className="muted">{i.distance}</span>
+                    <li key={i.name.sr}>
+                      <span>{t(i.name)}</span>
+                      <span className="muted">{t(i.distance)}</span>
                     </li>
                   ))}
                 </ul>
@@ -592,7 +620,7 @@ function Location() {
               target="_blank"
               rel="noreferrer"
             >
-              Otvori u Google mapama
+              {s.openMaps}
             </a>
           </div>
         </div>
@@ -602,16 +630,17 @@ function Location() {
 }
 
 function Footer() {
+  const { s, t } = useLang()
   return (
     <footer className="footer">
       <div className="container">
-        <strong>{apartment.name}</strong> · {apartment.address}
+        <strong>{apartment.name}</strong> · {t(apartment.address)}
         <div className="footer-phone">
-          Domaćin {host.name}: <a href={`tel:${host.phoneIntl}`}>{host.phone}</a>
+          {s.footerHost} {host.name}: <a href={`tel:${host.phoneIntl}`}>{host.phone}</a>
         </div>
         <div className="muted">
-          Podaci i fotografije preuzeti sa{' '}
-          <a href={apartment.bookingUrl} target="_blank" rel="noreferrer">Booking.com</a> i{' '}
+          {s.dataFrom}{' '}
+          <a href={s.bookingUrl} target="_blank" rel="noreferrer">Booking.com</a> {s.and}{' '}
           <a href="https://www.airbnb.com/rooms/1241843572563048799" target="_blank" rel="noreferrer">Airbnb</a>
         </div>
       </div>
@@ -620,6 +649,7 @@ function Footer() {
 }
 
 function CallFab() {
+  const { s } = useLang()
   const [show, setShow] = useState(false)
   useEffect(() => {
     const onScroll = () => setShow(window.scrollY > window.innerHeight * 0.6)
@@ -631,11 +661,11 @@ function CallFab() {
     <a
       className={`call-fab${show ? ' is-on' : ''}`}
       href={`tel:${host.phoneIntl}`}
-      aria-label={`Pozovi domaćina ${host.name}a: ${host.phone}`}
+      aria-label={`${s.callHost(host.name)}: ${host.phone}`}
     >
       <img src={host.photo} alt="" />
       <span>
-        <small>Pozovi domaćina</small>
+        <small>{s.callHostShort}</small>
         {host.phone}
       </span>
     </a>
@@ -643,13 +673,35 @@ function CallFab() {
 }
 
 export default function App() {
+  const [lang, setLang] = useState(initialLang)
   const [open, setOpen] = useState(null)
   const nav = useCallback((dir) => setOpen((i) => (i + dir + photos.length) % photos.length), [])
   const close = useCallback(() => setOpen(null), [])
   useReveal()
 
+  useEffect(() => {
+    document.documentElement.lang = lang
+    document.title = strings[lang].title
+    try {
+      localStorage.setItem('lang', lang)
+    } catch {
+      // izbor jezika se tada ne pamti
+    }
+  }, [lang])
+
+  const value = useMemo(() => {
+    const s = strings[lang]
+    return {
+      lang,
+      setLang,
+      s,
+      t: (x) => (x && typeof x === 'object' ? x[lang] : x),
+      fmt: (n, decimals = 1) => n.toFixed(decimals).replace('.', s.decimal),
+    }
+  }, [lang])
+
   return (
-    <>
+    <LangContext.Provider value={value}>
       <Header />
       <Hero onOpen={setOpen} />
       <Gallery onOpen={setOpen} />
@@ -662,6 +714,6 @@ export default function App() {
       <Footer />
       <CallFab />
       {open !== null && <Lightbox index={open} onClose={close} onNav={nav} />}
-    </>
+    </LangContext.Provider>
   )
 }

@@ -192,6 +192,25 @@ h3 { margin: 0 0 0.75rem; font-size: 1.05rem; }
 .nav a:hover::after, .nav a.is-active::after { transform: scaleX(1); }
 .nav a.is-active { color: var(--text); }
 
+/* Izbor jezika */
+.topbar-actions { display: flex; align-items: center; gap: 12px; }
+.lang-switch {
+  position: relative; display: inline-flex; padding: 3px;
+  background: var(--alt); border-radius: 999px;
+}
+.lang-thumb {
+  position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px);
+  background: var(--surface); border-radius: 999px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lang-switch button {
+  position: relative; z-index: 1; width: 40px; padding: 5px 0; border: 0; background: none;
+  font: inherit; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em;
+  color: var(--muted); cursor: pointer; transition: color 0.25s;
+}
+.lang-switch button.is-active { color: var(--text); }
+.review .small { font-size: 0.8rem; margin-top: 8px; }
+
 /* Pojavljivanje pri skrolovanju */
 .reveal {
   opacity: 0; transform: translateY(24px);
@@ -400,4 +419,7 @@ h3 { margin: 0 0 0.75rem; font-size: 1.05rem; }
   .btn-call { width: 100%; justify-content: center; }
   .host-actions .btn-outline { width: 100%; text-align: center; }
   .call-fab { right: 16px; bottom: 16px; }
+  .topbar-actions { gap: 8px; }
+  .topbar-actions .btn { padding: 8px 14px; font-size: 0.88rem; }
+  .logo { font-size: 1.2rem; }
 }
